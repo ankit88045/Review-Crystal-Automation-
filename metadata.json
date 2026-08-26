@@ -1,0 +1,6 @@
+{
+  "name": "Crystal Makeover Salon And Academy Review",
+  "description": "AI-powered review collection and automated replies for Google Business Profiles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
