@@ -93,10 +93,11 @@ export async function generateAIResponse(prompt: string, fallbackText?: string):
         const content = data.choices?.[0]?.message?.content?.trim();
         if (content) return content.replace(/^["']|["']$/g, '').trim();
       } else {
-        console.warn("OpenRouter request failed, trying Gemini or fallback...");
+        const errorText = await response.text().catch(() => 'no text');
+        console.log(`OpenRouter request failed (${response.status}): ${errorText}. Trying Gemini or fallback...`);
       }
     } catch (err) {
-      console.warn("OpenRouter error:", err);
+      console.log("OpenRouter error:", err);
     }
   }
 
@@ -111,7 +112,7 @@ export async function generateAIResponse(prompt: string, fallbackText?: string):
       const text = result.text?.trim();
       if (text) return text.replace(/^["']|["']$/g, '').trim();
     } catch (geminiErr) {
-      console.warn("Gemini API error:", geminiErr);
+      console.log("Gemini API error:", geminiErr);
     }
   }
 
