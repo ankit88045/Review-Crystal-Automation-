@@ -129,11 +129,6 @@ export async function verifyAdminAuth(req: express.Request, res: express.Respons
 
   const token = authHeader.split(' ')[1];
 
-  // Allow mock/demo token for preview sandbox testing
-  if (token === 'demo_admin_preview_token' || token.startsWith('preview_admin_')) {
-    return true;
-  }
-
   try {
     const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
     if (!verifyRes.ok) {

@@ -54,66 +54,6 @@ const INITIAL_SETTINGS: AISettings = {
   }
 };
 
-const INITIAL_REVIEWS: Review[] = [
-  {
-    name: 'accounts/123/locations/456/reviews/101',
-    reviewId: '101',
-    reviewer: { displayName: 'Pooja Sharma', profilePhotoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=faces' },
-    starRating: 'FIVE',
-    sentiment: 'positive',
-    detectedService: 'Bridal Makeup',
-    comment: 'Mere wedding day ka bridal makeup yahan se hua tha. Staff itna polite tha aur makeup pure function me fresh raha! Bilkul natural look mila. Thank you so much!',
-    createTime: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    locationId: '1'
-  },
-  {
-    name: 'accounts/123/locations/456/reviews/102',
-    reviewId: '102',
-    reviewer: { displayName: 'Neha Verma', profilePhotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces' },
-    starRating: 'THREE',
-    sentiment: 'neutral',
-    detectedService: 'Hair Spa & Styling',
-    comment: 'Hair spa accha tha lekin appointment time se 20 minutes wait karna pada. Salon hygiene and staff behavior was nice though.',
-    createTime: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    locationId: '1'
-  },
-  {
-    name: 'accounts/123/locations/456/reviews/103',
-    reviewId: '103',
-    reviewer: { displayName: 'Kritika Gupta', profilePhotoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=faces' },
-    starRating: 'ONE',
-    sentiment: 'negative',
-    detectedService: 'Nail Extensions',
-    comment: 'Nail extension 2 din me nikal gaya aur finishing bilkul neat nahi thi. I expected much better service.',
-    createTime: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    locationId: '2'
-  },
-  {
-    name: 'accounts/123/locations/456/reviews/104',
-    reviewId: '104',
-    reviewer: { displayName: 'Ananya Roy', profilePhotoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=faces' },
-    starRating: 'FIVE',
-    sentiment: 'positive',
-    detectedService: 'Hydra Facial',
-    comment: 'Hydra facial ke baad instant glow aaya! The female staff is super supportive and hygienic. 10/10 recommended!',
-    createTime: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    reviewReply: {
-      comment: 'Dear Ananya, thank you so much for your glowing review! ❤️ Hum bohot khush hain ki aapko Crystal Makeover Salon par hydra facial pasand aayi. Looking forward to welcoming you again soon! ✨ - Crystal Makeover Team',
-      updateTime: new Date(Date.now() - 1000 * 60 * 60 * 40).toISOString()
-    },
-    locationId: '1'
-  }
-];
-
-const mockTrendData = Array.from({ length: 30 }).map((_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (29 - i));
-  const randomRating = 4.2 + (Math.sin(i / 3) * 0.4) + (Math.random() * 0.4);
-  return {
-    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    rating: Number(Math.min(5, Math.max(4.0, randomRating)).toFixed(1))
-  };
-});
 
 export function OwnerDashboard() {
   const [token, setToken] = useState<string | null>(() => {
@@ -127,7 +67,7 @@ export function OwnerDashboard() {
 
   const [reviews, setReviews] = useState<Review[]>(() => {
     const saved = localStorage.getItem('crystal_reviews_store');
-    return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [settings, setSettings] = useState<AISettings>(() => {
@@ -188,18 +128,7 @@ export function OwnerDashboard() {
     }
 
     if (!(window as any).google?.accounts?.oauth2) {
-      // Fallback for preview container
-      const demoProfile: UserProfile = {
-        name: 'Crystal Salon Admin',
-        email: import.meta.env.VITE_ADMIN_EMAIL || 'crystalmakeoversalon@gmail.com',
-        picture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=faces'
-      };
-      setToken('demo_admin_preview_token');
-      setUserProfile(demoProfile);
-      localStorage.setItem('crystal_admin_token', 'demo_admin_preview_token');
-      localStorage.setItem('crystal_admin_profile', JSON.stringify(demoProfile));
-      toast.success('Signed in as Verified Admin');
-      return;
+      toast.error("Google Identity Services script not loaded");      return;
     }
 
     const client = (window as any).google?.accounts.oauth2.initTokenClient({
@@ -243,18 +172,6 @@ export function OwnerDashboard() {
     client?.requestAccessToken();
   };
 
-  const handleDemoSignIn = () => {
-    const demoProfile: UserProfile = {
-      name: 'Crystal Salon Admin',
-      email: import.meta.env.VITE_ADMIN_EMAIL || 'crystalmakeoversalon@gmail.com',
-      picture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=faces'
-    };
-    setToken('demo_admin_preview_token');
-    setUserProfile(demoProfile);
-    localStorage.setItem('crystal_admin_token', 'demo_admin_preview_token');
-    localStorage.setItem('crystal_admin_profile', JSON.stringify(demoProfile));
-    toast.success('Admin Mode Activated (Verified: crystalmakeoversalon@gmail.com)');
-  };
 
   const handleSignOut = () => {
     setToken(null);
@@ -284,7 +201,7 @@ export function OwnerDashboard() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || 'demo_admin_preview_token'}`
+          'Authorization': `Bearer ${token }`
         },
         body: JSON.stringify({
           reviewerName: review.reviewer.displayName,
@@ -344,7 +261,7 @@ export function OwnerDashboard() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || 'demo_admin_preview_token'}`
+          'Authorization': `Bearer ${token }`
         },
         body: JSON.stringify({
           reviews: unreplied,
@@ -400,56 +317,6 @@ export function OwnerDashboard() {
     }, 700);
   };
 
-  // Simulate incoming live review from GBP
-  const handleSimulateNewReview = () => {
-    if (!simComment.trim()) {
-      toast.error('Please enter a review comment');
-      return;
-    }
-
-    const starMap: Record<number, 'FIVE' | 'FOUR' | 'THREE' | 'TWO' | 'ONE'> = {
-      5: 'FIVE',
-      4: 'FOUR',
-      3: 'THREE',
-      2: 'TWO',
-      1: 'ONE'
-    };
-
-    let sentiment: SentimentType = 'positive';
-    if (simRating <= 2) sentiment = 'negative';
-    else if (simRating === 3) sentiment = 'neutral';
-    else sentiment = 'positive';
-
-    const newId = String(Date.now());
-    const newRev: Review = {
-      name: `accounts/123/locations/456/reviews/${newId}`,
-      reviewId: newId,
-      reviewer: {
-        displayName: simName || 'New Client',
-        profilePhotoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces'
-      },
-      starRating: starMap[simRating] || 'FIVE',
-      sentiment,
-      detectedService: simService || 'Salon Service',
-      comment: simComment,
-      createTime: new Date().toISOString(),
-      locationId: '1'
-    };
-
-    setReviews(prev => [newRev, ...prev]);
-    setIsSimulateModalOpen(false);
-    setLastSyncTime(new Date());
-
-    toast.success(`Google Business Profile: New ${simRating}★ review detected from ${simName}! 🔔`);
-
-    // If auto-draft is on, trigger instant AI generation
-    if (settings.autoDraft) {
-      setTimeout(() => {
-        generateReply(newRev);
-      }, 500);
-    }
-  };
-
   // Test AI sandbox in Settings
   const handleTestSandbox = async () => {
     setIsTestingAI(true);
@@ -460,7 +327,7 @@ export function OwnerDashboard() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || 'demo_admin_preview_token'}`
+          'Authorization': `Bearer ${token }`
         },
         body: JSON.stringify({
           reviewerName: 'Sample Client',
@@ -510,6 +377,14 @@ export function OwnerDashboard() {
            (r.detectedService && r.detectedService.toLowerCase().includes(q));
   });
 
+  const trendData = reviews.length === 0 ? [] : reviews.map((r) => {
+    const numRating = { 'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5 }[r.starRating] || Number(r.starRating) || 5;
+    return {
+      date: new Date(r.createTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      rating: numRating
+    };
+  }).slice(0, 30).reverse();
+
   // Login Screen if not authenticated
   if (!token) {
     return (
@@ -532,18 +407,6 @@ export function OwnerDashboard() {
             Sign in with Google Business Account
           </button>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-medium">Or Quick Preview</span></div>
-          </div>
-
-          <button
-            onClick={handleDemoSignIn}
-            className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Bot size={16} className="text-rose-400" />
-            Open Admin Monitor Preview
-          </button>
         </div>
 
         <div className="mt-8 flex items-center gap-2 text-xs text-slate-400">
@@ -717,13 +580,6 @@ export function OwnerDashboard() {
               </button>
             </div>
 
-            <button
-              onClick={() => setIsSimulateModalOpen(true)}
-              className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
-            >
-              <PlusCircle size={14} />
-              Simulate New GBP Review
-            </button>
           </div>
 
           {/* Filters & Search */}
@@ -1007,7 +863,7 @@ export function OwnerDashboard() {
             
             <div className="h-44 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockTrendData}>
+                <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="date" 
@@ -1313,108 +1169,6 @@ export function OwnerDashboard() {
         </div>
       )}
 
-      {/* Modal: Simulate Incoming GBP Review */}
-      {isSimulateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-100 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Radio className="text-rose-500 animate-pulse" size={18} />
-                Simulate Live Google Review
-              </h3>
-              <button
-                onClick={() => setIsSimulateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg leading-none"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Simulate an incoming review from Google Business Profile to see how the AI monitoring engine detects sentiment and drafts customized replies.
-            </p>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Reviewer Name</label>
-                <input
-                  type="text"
-                  value={simName}
-                  onChange={(e) => setSimName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Star Rating</label>
-                <div className="flex gap-2">
-                  {[5, 4, 3, 2, 1].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        setSimRating(r);
-                        if (r >= 4) {
-                          setSimComment('Party makeup bohot pyaara hua tha! Sabhi relatives ne tareef ki. Staff behavior was very polite.');
-                          setSimService('Bridal & Party Makeup');
-                        } else if (r === 3) {
-                          setSimComment('Haircut was good, but appointment time se thoda wait karna pada.');
-                          setSimService('Hair Cut & Styling');
-                        } else {
-                          setSimComment('Service was not satisfactory. Staff was in a hurry.');
-                          setSimService('Nail Care');
-                        }
-                      }}
-                      className={cn(
-                        "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                        simRating === r
-                          ? "bg-slate-900 text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      )}
-                    >
-                      {r}★
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Service Tag</label>
-                <input
-                  type="text"
-                  value={simService}
-                  onChange={(e) => setSimService(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Customer Review Comment</label>
-                <textarea
-                  value={simComment}
-                  onChange={(e) => setSimComment(e.target.value)}
-                  rows={3}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 resize-none font-sans"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setIsSimulateModalOpen(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSimulateNewReview}
-                className="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-xs font-bold rounded-xl transition-all shadow-xs"
-              >
-                Simulate Incoming Review 🔔
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
