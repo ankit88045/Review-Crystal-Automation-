@@ -82,7 +82,7 @@ export async function generateAIResponse(prompt: string, fallbackText?: string):
           "X-Title": "Crystal Makeover Salon And Academy Review"
         },
         body: JSON.stringify({
-          model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
+          model: (process.env.OPENROUTER_MODEL && process.env.OPENROUTER_MODEL !== 'Nill' && process.env.OPENROUTER_MODEL !== 'null' && process.env.OPENROUTER_MODEL !== 'undefined') ? process.env.OPENROUTER_MODEL : "openai/gpt-4o-mini",
           temperature: 0.7,
           messages: [{ role: "user", content: prompt }]
         })

@@ -30,6 +30,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { cn } from './CustomerReview';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { auth } from '../firebase';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import type { Review, Location, UserProfile, AISettings, SentimentType, PlaceholderConfig } from '../types';
 
 const DEFAULT_LOCATIONS: Location[] = [
@@ -118,62 +120,44 @@ export function OwnerDashboard() {
     return () => clearInterval(interval);
   }, [settings.autoMonitor, settings.syncInterval]);
 
-  const handleGoogleLogin = async () => {
-    let clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const handleGoogleLogin = async () => {
     try {
-      const config = await import('../../firebase-applet-config.json');
-      if (config.oAuthClientId) clientId = config.oAuthClientId;
-    } catch (e) {
-      console.warn("Could not load firebase config for client ID");
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/business.manage');
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const googleToken = credential?.accessToken;
+
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'crystalmakeoversalon@gmail.com';
+      if (result.user.email?.toLowerCase() !== adminEmail.toLowerCase()) {
+        toast.error(`Access Denied: ${result.user.email} is not the authorized Admin.`);
+        await signOut(auth);
+        setToken(null);
+        setUserProfile(null);
+        return;
+      }
+
+      if (googleToken) {
+        setToken(googleToken);
+        localStorage.setItem('crystal_admin_token', googleToken);
+      }
+
+      const profile = {
+        name: result.user.displayName || 'Admin',
+        email: result.user.email || '',
+        picture: result.user.photoURL || ''
+      };
+      setUserProfile(profile);
+      localStorage.setItem('crystal_admin_profile', JSON.stringify(profile));
+      toast.success(`Welcome, Admin (${profile.name})!`);
+    } catch (err: any) {
+      console.error('Login failed', err);
+      toast.error('Google Sign-In failed');
     }
-
-    if (!(window as any).google?.accounts?.oauth2) {
-      toast.error("Google Identity Services script not loaded");      return;
-    }
-
-    const client = (window as any).google?.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-      callback: async (response: any) => {
-        if (response.error) {
-          console.error(response);
-          toast.error('Google Sign-In failed');
-          return;
-        }
-        
-        try {
-          const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${response.access_token}` }
-          });
-          
-          if (profileRes.ok) {
-            const profile = await profileRes.json();
-            const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'crystalmakeoversalon@gmail.com';
-
-            if (profile.email.toLowerCase() !== adminEmail.toLowerCase()) {
-              toast.error(`Access Denied: ${profile.email} is not the authorized Admin.`);
-              setToken(null);
-              setUserProfile(null);
-              return;
-            }
-
-            setToken(response.access_token);
-            setUserProfile(profile);
-            localStorage.setItem('crystal_admin_token', response.access_token);
-            localStorage.setItem('crystal_admin_profile', JSON.stringify(profile));
-            toast.success(`Welcome, Admin (${profile.name})!`);
-          }
-        } catch (err) {
-          console.error('Failed to fetch profile', err);
-          toast.error('Failed to verify profile.');
-        }
-      },
-    });
-    client?.requestAccessToken();
   };
 
-
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await signOut(auth);
     setToken(null);
     setUserProfile(null);
     localStorage.removeItem('crystal_admin_token');
@@ -298,9 +282,24 @@ export function OwnerDashboard() {
     }
   };
 
-  const postReply = (reviewName: string, replyText: string) => {
+  const postReply = async (reviewName: string, replyText: string) => {
     setIsPosting(true);
-    setTimeout(() => {
+    try {
+      const targetUrl = `https://mybusiness.googleapis.com/v4/${reviewName}/reply`;
+      const res = await fetch(`/api/gbp/reply?url=${encodeURIComponent(targetUrl)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comment: replyText })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error?.message || errData.error || 'Failed to post reply');
+      }
+      
       setReviews(prev => prev.map(r => 
         r.name === reviewName 
           ? { 
@@ -312,9 +311,13 @@ export function OwnerDashboard() {
       ));
       setActiveReplyId(null);
       setDraftReply('');
-      setIsPosting(false);
       toast.success('Official response posted to Google Business Profile! 🎉');
-    }, 700);
+    } catch (err: any) {
+      console.error("Failed to post reply to GBP", err);
+      toast.error(`Error: ${err.message}`);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   // Test AI sandbox in Settings
@@ -395,7 +398,7 @@ export function OwnerDashboard() {
         
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Google Business Profile Monitor</h2>
         <p className="text-slate-600 mb-6 max-w-md text-sm leading-relaxed">
-          Sign in with your verified salon Google Account (<span className="font-semibold text-rose-600">{import.meta.env.VITE_ADMIN_EMAIL || 'crystalmakeoversalon@gmail.com'}</span>) to monitor live reviews and automate sentiment-tailored AI responses.
+          Sign in securely as the verified Admin to monitor live Google reviews and automate AI responses.
         </p>
 
         <div className="w-full max-w-sm space-y-3">
@@ -794,7 +797,7 @@ export function OwnerDashboard() {
                                 ) : (
                                   <>
                                     <Send size={13} />
-                                    Post Official Reply
+                                    Post Now
                                   </>
                                 )}
                               </button>
@@ -828,7 +831,7 @@ export function OwnerDashboard() {
                             onClick={() => postReply(review.name, review.draftReply!)}
                             className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-xs"
                           >
-                            <Check size={13} /> Approve & Post
+                            <Check size={13} /> Post Now
                           </button>
                         </div>
                       </div>

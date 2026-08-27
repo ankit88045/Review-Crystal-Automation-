@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Copy, ExternalLink, ThumbsUp, AlertCircle, Check, RefreshCw, Send, Quote } from 'lucide-react';
+import { Star, Copy, ExternalLink, ThumbsUp, AlertCircle, Check, RefreshCw, Send, Quote, Sparkles, MessageSquare, Bot, CheckCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { toast } from 'sonner';
@@ -256,18 +256,23 @@ export function CustomerReview() {
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 className="w-full mt-auto pt-8"
               >
-                <button
-                  onClick={() => {
-                    if (rating <= 2) {
-                      setStep(4);
-                    } else {
+                {rating >= 4 ? (
+                  <button
+                    onClick={() => {
                       setStep(2);
-                    }
-                  }}
-                  className="w-full flex justify-center items-center py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
-                >
-                  Continue
-                </button>
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
+                  >
+                    Continue <ExternalLink size={18} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={generateDraft}
+                    className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
+                  >
+                    Share Feedback
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -276,59 +281,58 @@ export function CustomerReview() {
 
       {step === 2 && (
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
           className="w-full h-full flex flex-col"
         >
-          <h3 className="font-semibold text-slate-800 mb-6 text-center text-lg">What stood out to you?</h3>
-          
-          <div className="space-y-6 mb-8 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-            {visibleCategories.map(category => (
-              <div key={category}>
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                  {category}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIZED_TAGS[category as keyof typeof CATEGORIZED_TAGS].map(tag => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => handleTagToggle(tag)}
-                        className={cn(
-                          "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border flex items-center gap-1.5",
-                          isSelected
-                            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                        )}
-                      >
-                        {isSelected && <Check size={14} className="text-white" />}
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
+          <div className="flex-1 overflow-y-auto pb-4 space-y-6">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                <Sparkles size={16} className="text-amber-500" /> What did you love?
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {visibleCategories.map(category => (
+                  <React.Fragment key={category}>
+                    {CATEGORIZED_TAGS[category as keyof typeof CATEGORIZED_TAGS].map(tag => {
+                      const isSelected = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          onClick={() => handleTagToggle(tag)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-sm font-medium transition-all active:scale-95 border",
+                            isSelected
+                              ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                          )}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 uppercase tracking-wider">
+                <MessageSquare size={16} className="text-blue-500" /> Any special shoutout? (Optional)
+              </h3>
+              <textarea
+                className="w-full h-24 p-4 rounded-xl border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 resize-none text-sm shadow-inner bg-slate-50 focus:bg-white transition-colors"
+                placeholder="Name of your stylist, or anything else..."
+                value={customFeedback}
+                onChange={e => setCustomFeedback(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="mb-8">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Other / Custom (Optional)
-            </h4>
-            <textarea
-              value={customFeedback}
-              onChange={(e) => setCustomFeedback(e.target.value)}
-              placeholder="Any other service or vibe you want to mention?"
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none h-20 text-sm bg-slate-50 transition-colors"
-            />
-          </div>
-          
           <button
             onClick={generateDraft}
-            className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
+            className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98] mt-4"
           >
-            Continue to Review
+            Create Review Text
           </button>
         </motion.div>
       )}
@@ -340,47 +344,57 @@ export function CustomerReview() {
           className="w-full h-full flex flex-col"
         >
           {isDrafting ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-slate-900 mb-4"></div>
-              <p className="font-medium animate-pulse">AI is writing your review...</p>
+            <div className="flex flex-col items-center justify-center py-12 text-slate-500 h-full">
+              <Bot size={48} className="text-blue-500 animate-bounce mb-4" />
+              <div className="flex space-x-1 mb-4">
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-ping" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-ping" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-slate-400 rounded-full animate-ping" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <p className="font-medium">Crafting the perfect review...</p>
             </div>
           ) : (
             <>
-              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 relative group">
-                <p className="text-slate-700 text-base leading-relaxed">{draft}</p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800">Your AI Review</h3>
+                <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-md flex items-center gap-1">
+                  <Sparkles size={12} /> AI Magic
+                </span>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner relative">
+                <Quote className="absolute top-3 left-3 text-slate-200 z-0" size={40} />
+                <p className="text-slate-800 text-sm leading-relaxed relative z-10 font-medium">{draft}</p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 mt-auto">
                 <button
                   onClick={generateDraft}
                   disabled={isDrafting}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-2xl transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-2xl transition-all active:scale-[0.98]"
                 >
-                  <RefreshCw size={18} />
-                  Regenerate Review
+                  <RefreshCw size={16} />
+                  Rewrite
                 </button>
 
                 <button
-                  onClick={copyToClipboard}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-white border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium rounded-2xl transition-all active:scale-[0.98]"
+                  onClick={() => {
+                    copyToClipboard();
+                    setTimeout(() => {
+                      window.open(reviewLink, '_blank', 'noopener,noreferrer');
+                    }, 500);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl transition-all shadow-md active:scale-[0.98]"
                 >
-                  {isCopied ? <ThumbsUp size={18} className="text-green-600" /> : <Copy size={18} />}
-                  {isCopied ? 'Copied to clipboard!' : 'Copy Review Text'}
+                  <ExternalLink size={20} />
+                  Copy & Post on Google
                 </button>
-
-                <a
-                  href={reviewLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
-                >
-                  <ExternalLink size={18} />
-                  Post on Google
-                </a>
                 
-                <div className="pt-4 text-center space-y-1">
-                  <p className="text-xs text-slate-500 font-medium">Step 1: Copy your review</p>
-                  <p className="text-xs text-slate-500 font-medium">Step 2: Paste it on our Google Profile</p>
+                <div className="pt-2 text-center">
+                  <p className="text-xs text-slate-500 font-medium flex items-center justify-center gap-1">
+                    <CheckCircle size={12} className="text-green-500" />
+                    Just paste it in the Google window that opens!
+                  </p>
                 </div>
               </div>
             </>
@@ -400,56 +414,64 @@ export function CustomerReview() {
               We're sorry we didn't meet your expectations. Please suggest how we can improve or write to our management team about your issue.
             </p>
           </div>
-          
-          <div className="mb-6">
+          <div className="flex-1 mb-6">
             <textarea
+              className="w-full h-32 p-4 rounded-xl border border-slate-200 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 resize-none text-sm bg-slate-50"
+              placeholder="What could we do better?"
               value={suggestion}
-              onChange={(e) => setSuggestion(e.target.value)}
-              placeholder="Tell us what went wrong..."
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent resize-none h-32 text-sm bg-white shadow-sm transition-colors"
+              onChange={e => setSuggestion(e.target.value)}
             />
           </div>
-          
-          <button
-            onClick={submitNegativeFeedback}
-            disabled={isSubmitting || !suggestion.trim()}
-            className="w-full flex justify-center items-center gap-2 py-3.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Sending...
-              </div>
-            ) : (
-              <>
-                <Send size={18} />
-                Send to Management
-              </>
-            )}
-          </button>
+          <div className="mt-auto space-y-3">
+            <button
+              onClick={submitNegativeFeedback}
+              disabled={isSubmitting || !suggestion.trim()}
+              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-2xl transition-all shadow-sm active:scale-[0.98]"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  Send to Management
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setStep(1)}
+              className="w-full py-3.5 px-4 bg-transparent text-slate-500 hover:text-slate-700 font-medium rounded-2xl transition-all"
+            >
+              Cancel
+            </button>
+          </div>
         </motion.div>
       )}
 
       {step === 5 && (
         <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-8"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full h-full flex flex-col items-center justify-center text-center py-8"
         >
-          <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-5">
-            <Check className="text-green-500" size={32} />
+          <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6 mx-auto shadow-inner border border-green-100">
+            <Check size={40} />
           </div>
-          <h3 className="text-xl font-bold text-slate-800 mb-2">Thank You For Your Honest Review</h3>
-          <p className="text-slate-600 mb-8 leading-relaxed text-sm">
-            We are genuinely sorry for the inconvenience. We will fix it soon or improve.
+          <h3 className="text-2xl font-bold text-slate-800 mb-2">Feedback Received</h3>
+          <p className="text-slate-600 text-sm mb-8 leading-relaxed max-w-[250px] mx-auto">
+            Thank you for helping us improve. Our management team will review your feedback shortly.
           </p>
           <button
             onClick={() => {
               setStep(1);
               setRating(0);
+              setSelectedTags([]);
+              setCustomFeedback('');
               setSuggestion('');
             }}
-            className="text-slate-500 font-medium hover:text-slate-800 transition-colors"
+            className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-2xl transition-all shadow-sm active:scale-95"
           >
             Start over
           </button>
